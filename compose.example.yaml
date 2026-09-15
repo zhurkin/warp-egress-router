@@ -1,7 +1,6 @@
 services:
   warp-egress-router:
-    build:
-      context: .
+    image: zhurkinvs/warp-egress-router:0.1.0
     container_name: warp-egress-router
 
     cap_add:
