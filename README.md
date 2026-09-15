@@ -4,6 +4,17 @@ Containerized Cloudflare WARP egress gateway for routed network traffic.
 
 `warp-egress-router` runs the official Cloudflare WARP Linux client in an isolated Docker network namespace using `TunnelOnly` mode. It is intended to act as a dedicated WARP egress router without changing the default routing of the Docker host.
 
+## Docker image
+
+The published Docker image is available on Docker Hub:
+
+[zhurkinvs/warp-egress-router](https://hub.docker.com/r/zhurkinvs/warp-egress-router)
+
+Pull a specific release:
+
+```bash
+docker pull zhurkinvs/warp-egress-router:0.1.0
+
 ## Why
 
 Running WARP directly on a Linux host in tunnel mode can affect the host's routing and firewall configuration.
