@@ -1,4 +1,3 @@
-cat > Dockerfile <<'EOF'
 FROM debian:13.6-slim
 
 LABEL org.opencontainers.image.source="https://github.com/zhurkin/warp-egress-router"
@@ -40,4 +39,3 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod 755 /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
-EOF
