@@ -1,38 +1,60 @@
+FROM debian:%%DEBIAN_IMAGE%% AS warp-package
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gpg && \
+    curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg \
+        | gpg --dearmor \
+        -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ %%DEBIAN_SUITE%% main" \
+        > /etc/apt/sources.list.d/cloudflare-client.list && \
+    apt-get update && \
+    cd /tmp && \
+    apt-get download cloudflare-warp=%%WARP_VERSION%% && \
+    mkdir /warp-root && \
+    dpkg-deb -x cloudflare-warp_*.deb /warp-root
+
+
 FROM debian:%%DEBIAN_IMAGE%%
 
 LABEL org.opencontainers.image.source="https://github.com/zhurkin/warp-egress-router"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.title="warp-egress-router"
 LABEL org.opencontainers.image.description="Containerized Cloudflare WARP TunnelOnly egress gateway"
+LABEL org.opencontainers.image.version="%%WARP_VERSION%%"
 
-ENV DEBIAN_FRONTEND=noninteractive
+ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
-        curl \
-        gnupg \
         iproute2 \
-        iputils-ping \
-        dnsutils \
         nftables \
-        procps && \
+        libdbus-1-3 \
+        libnss3 \
+        libtss2-esys-3.0.2-0t64 \
+        libtss2-tctildr0t64 \
+        libcap2 \
+        libpcap0.8t64 && \
     rm -rf /var/lib/apt/lists/*
 
-# Prevent package post-install scripts from trying to start systemd services
-# during the image build.
-RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && \
-    chmod 755 /usr/sbin/policy-rc.d
+# Only the headless WARP service and CLI are required.
+COPY --from=warp-package /warp-root/bin/warp-svc /usr/bin/warp-svc
+COPY --from=warp-package /warp-root/bin/warp-cli /usr/bin/warp-cli
 
-RUN curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg \
-      | gpg --dearmor \
-      -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ %%DEBIAN_SUITE%% main" \
-      > /etc/apt/sources.list.d/cloudflare-client.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends cloudflare-warp && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -f /usr/sbin/policy-rc.d
+RUN mkdir -p \
+        /run/cloudflare-warp \
+        /var/lib/cloudflare-warp \
+        /var/log/cloudflare-warp && \
+    ldd /usr/bin/warp-svc | tee /tmp/warp-svc.ldd && \
+    ! grep -q "not found" /tmp/warp-svc.ldd && \
+    ldd /usr/bin/warp-cli | tee /tmp/warp-cli.ldd && \
+    ! grep -q "not found" /tmp/warp-cli.ldd && \
+    rm -f /tmp/warp-svc.ldd /tmp/warp-cli.ldd
 
 COPY entrypoint.sh /entrypoint.sh
 
