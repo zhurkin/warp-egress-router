@@ -1,0 +1,6 @@
+{
+  "debian": {
+    "image": "13.6-slim",
+    "suite": "trixie"
+  }
+}
