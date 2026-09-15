@@ -1,0 +1,43 @@
+cat > Dockerfile <<'EOF'
+FROM debian:13.6-slim
+
+LABEL org.opencontainers.image.source="https://github.com/zhurkin/warp-egress-router"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.title="warp-egress-router"
+LABEL org.opencontainers.image.description="Containerized Cloudflare WARP TunnelOnly egress gateway"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gnupg \
+        iproute2 \
+        iputils-ping \
+        dnsutils \
+        nftables \
+        procps && \
+    rm -rf /var/lib/apt/lists/*
+
+# Prevent package post-install scripts from trying to start systemd services
+# during the image build.
+RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && \
+    chmod 755 /usr/sbin/policy-rc.d
+
+RUN curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg \
+      | gpg --dearmor \
+      -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ trixie main" \
+      > /etc/apt/sources.list.d/cloudflare-client.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends cloudflare-warp && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -f /usr/sbin/policy-rc.d
+
+COPY entrypoint.sh /entrypoint.sh
+
+RUN chmod 755 /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+EOF
