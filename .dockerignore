@@ -4,3 +4,6 @@
 README.md
 LICENSE
 compose*.yaml
+Dockerfile.template
+versions.json
+apply-templates.sh
