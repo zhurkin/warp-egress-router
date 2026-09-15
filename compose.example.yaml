@@ -1,0 +1,27 @@
+services:
+  warp-egress-router:
+    build:
+      context: .
+    container_name: warp-egress-router
+
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - NET_BIND_SERVICE
+      - SYS_PTRACE
+
+    devices:
+      - /dev/net/tun:/dev/net/tun
+
+    sysctls:
+      net.ipv4.ip_forward: "1"
+
+    volumes:
+      - warp-state:/var/lib/cloudflare-warp
+      - warp-logs:/var/log/cloudflare-warp
+
+    restart: unless-stopped
+
+volumes:
+  warp-state:
+  warp-logs:
