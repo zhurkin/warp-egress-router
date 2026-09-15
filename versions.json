@@ -2,5 +2,8 @@
   "debian": {
     "image": "13.6-slim",
     "suite": "trixie"
+  },
+  "warp": {
+    "version": "2026.7.1377.0"
   }
 }
