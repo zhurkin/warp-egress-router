@@ -18,24 +18,19 @@ setup_router()
 
     nft delete table ip warp-router 2>/dev/null || true
 
-    nft add table ip warp-router
-
-    nft 'add chain ip warp-router postrouting {
-        type nat hook postrouting priority srcnat;
-        policy accept;
-    }'
-
-    nft 'add rule ip warp-router postrouting
-        oifname "CloudflareWARP" masquerade'
+    nft -f - <<'NFT'
+table ip warp-router {
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+        oifname "CloudflareWARP" masquerade
+    }
+}
+NFT
 
     echo "WARP egress routing configured"
-
     nft list table ip warp-router
 }
 
-# Wait for WARP to become connected and configure forwarding/NAT.
-# On a fresh installation this simply waits until the user creates
-# a WARP registration and connects.
 setup_router &
 
-exec /bin/warp-svc
+exec /usr/bin/warp-svc
